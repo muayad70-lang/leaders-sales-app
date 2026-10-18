@@ -1,7 +1,50 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مساعد ليدرز الذكي للمبيعات</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; font-family: system-ui, -apple-system, sans-serif; padding: 20px; }
+        .card { border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .btn-record { width: 100px; height: 100px; border-radius: 50%; font-size: 32px; transition: all 0.3s; }
+        .btn-record.recording { background-color: #dc3545 !important; border-color: #dc3545; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
+        .response-box { background: #eef2f5; border-right: 5px solid #0d6efd; border-radius: 8px; min-height: 100px; font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+
+<div class="container my-4" style="max-width: 600px;">
+    <div class="card p-4 text-center">
+        <h3 class="mb-3 text-primary fw-bold">مساعد ليدرز الذكي للمبيعات</h3>
+        <p class="text-muted">اختر المنتج أو انقر على زر التسجيل وانطق الاعتراض الميداني مباشرة</p>
+
+        <!-- زر الميكروفون والتسجيل -->
+        <div class="my-4">
+            <button id="recordBtn" class="btn btn-primary btn-record shadow">🎙️</button>
+            <div id="statusText" class="mt-2 text-secondary font-monospace">انقر للبدء بالاستماع</div>
+        </div>
+
+        <!-- عرض النص المسموع -->
+        <div class="mb-3 text-start">
+            <label class="form-label fw-bold">النص المسموع:</label>
+            <div id="transcriptBox" class="form-control bg-light" style="min-height: 45px;">...</div>
+        </div>
+
+        <!-- عرض الرد الميداني المخصص -->
+        <div class="text-start">
+            <label class="form-label fw-bold text-success">الرد الميداني المقترح:</label>
+            <div id="responseBox" class="p-3 response-box">بانتظار التقاط الصوت...</div>
+        </div>
+    </div>
+</div>
+
 <script>
 let objectionRules = {};
 
-// 1. تحميل قواعد الاعتراضات تلقائياً عند فتح التطبيق
+// 1. تحميل قواعد الاعتراضات تلقائياً
 fetch('./objection_rules.json')
   .then(response => response.json())
   .then(data => {
@@ -10,39 +53,49 @@ fetch('./objection_rules.json')
   })
   .catch(err => console.error("خطأ في قراءة ملف JSON:", err));
 
-// 2. إعداد الميكروفون والتعرف على الصوت
+// 2. إعداد التعرف على الصوت
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recordBtn = document.getElementById('recordBtn');
+const statusText = document.getElementById('statusText');
+const transcriptBox = document.getElementById('transcriptBox');
+const responseBox = document.getElementById('responseBox');
 
-if (SpeechRecognition) {
-  const recognition = new SpeechRecognition();
-  recognition.lang = 'ar-SA';
-  recognition.continuous = false;
-  recognition.interimResults = false;
+if (!SpeechRecognition) {
+    statusText.innerText = "المتصفح لا يدعم الميكروفون. يرجى استخدام Chrome أو Safari.";
+} else {
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'ar-SA';
+    recognition.continuous = false;
+    recognition.interimResults = false;
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const recordBtn = document.getElementById('recordBtn');
-
-    if (recordBtn) {
-      recordBtn.addEventListener('click', () => {
+    recordBtn.addEventListener('click', () => {
         try {
-          recognition.start();
-          console.log("جاري الاستماع للعميل...");
+            recognition.start();
+            recordBtn.classList.add('recording');
+            statusText.innerText = "جاري الاستماع للعميل...";
         } catch (e) {
-          console.error("الميكروفون يعمل بالفعل:", e);
+            recognition.stop();
+            recordBtn.classList.remove('recording');
+            statusText.innerText = "انقر للبدء بالاستماع";
         }
-      });
-    }
+    });
 
     recognition.onresult = (event) => {
-      const text = event.results[0][0].transcript.toLowerCase();
-      console.log("النص الملتقط:", text);
-      matchObjection(text);
+        recordBtn.classList.remove('recording');
+        statusText.innerText = "تم التقاط الصوت بنجاح";
+        const spokenText = event.results[0][0].transcript;
+        transcriptBox.innerText = spokenText;
+        matchObjection(spokenText.toLowerCase());
     };
 
     recognition.onerror = (event) => {
-      console.error("خطأ الميكروفون:", event.error);
+        recordBtn.classList.remove('recording');
+        statusText.innerText = "حدث خطأ: " + event.error;
     };
-  });
+
+    recognition.onend = () => {
+        recordBtn.classList.remove('recording');
+    };
 }
 
 // 3. مطابقة الاعتراض وإظهار الرد الميداني
@@ -62,7 +115,8 @@ function matchObjection(spokenText) {
     responseText = objectionRules.horse_head_tea?.quality || objectionRules.horse_head_tea?.price;
   }
 
-  const responseBox = document.getElementById('responseBox');
-  if (responseBox) responseBox.innerText = responseText;
+  responseBox.innerText = responseText || "الرد غير متوفر في قواعد الاعتراضات.";
 }
 </script>
+</body>
+</html>
