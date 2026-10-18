@@ -1,3 +1,4 @@
+<script>
 let objectionRules = {};
 
 // 1. تحميل قواعد الاعتراضات تلقائياً عند فتح التطبيق
@@ -14,26 +15,34 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 
 if (SpeechRecognition) {
   const recognition = new SpeechRecognition();
-  recognition.lang = 'ar-SA'; // لغة التقاط الصوت العربية
+  recognition.lang = 'ar-SA';
   recognition.continuous = false;
   recognition.interimResults = false;
 
-  const recordBtn = document.getElementById('recordBtn'); // تأكد من وجود زر بهذا الـ id
+  document.addEventListener('DOMContentLoaded', () => {
+    const recordBtn = document.getElementById('recordBtn');
 
-  recordBtn.addEventListener('click', () => {
-    recognition.start();
-    console.log("جاري الاستماع للعميل...");
+    if (recordBtn) {
+      recordBtn.addEventListener('click', () => {
+        try {
+          recognition.start();
+          console.log("جاري الاستماع للعميل...");
+        } catch (e) {
+          console.error("الميكروفون يعمل بالفعل:", e);
+        }
+      });
+    }
+
+    recognition.onresult = (event) => {
+      const text = event.results[0][0].transcript.toLowerCase();
+      console.log("النص الملتقط:", text);
+      matchObjection(text);
+    };
+
+    recognition.onerror = (event) => {
+      console.error("خطأ الميكروفون:", event.error);
+    };
   });
-
-  recognition.onresult = (event) => {
-    const text = event.results[0][0].transcript.toLowerCase();
-    console.log("النص الملتقط:", text);
-    matchObjection(text);
-  };
-
-  recognition.onerror = (event) => {
-    console.error("خطأ الميكروفون:", event.error);
-  };
 }
 
 // 3. مطابقة الاعتراض وإظهار الرد الميداني
@@ -53,7 +62,7 @@ function matchObjection(spokenText) {
     responseText = objectionRules.horse_head_tea?.quality || objectionRules.horse_head_tea?.price;
   }
 
-  // عرض الرد في الشاشة (تأكد من وجود عنصر يحمل id="responseBox")
   const responseBox = document.getElementById('responseBox');
   if (responseBox) responseBox.innerText = responseText;
 }
+</script>
