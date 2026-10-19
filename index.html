@@ -58,3 +58,37 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 const recordBtn = document.getElementById('recordBtn');
 const statusText = document.getElementById('statusText');
 const transcriptBox
+function matchObjection(spokenText) {
+  let responseText = "";
+
+  // 1. بايسن
+  if (spokenText.includes("بايسن") || spokenText.includes("bison")) {
+    if (spokenText.includes("سعر") || spokenText.includes("غالي")) responseText = objectionRules.bison?.price;
+    else if (spokenText.includes("مخزون") || spokenText.includes("نقص")) responseText = objectionRules.bison?.stock;
+    else responseText = objectionRules.bison?.price;
+  } 
+  // 2. بيكر
+  else if (spokenText.includes("بيكر") || spokenText.includes("baker")) {
+    if (spokenText.includes("جودة") || spokenText.includes("تغليف")) responseText = objectionRules.baker?.quality;
+    else responseText = objectionRules.baker?.price;
+  }
+  // 3. شاي رأس الحصان
+  else if (spokenText.includes("حصان") || spokenText.includes("شاي")) {
+    responseText = objectionRules.horse_head_tea?.quality || objectionRules.horse_head_tea?.price;
+  }
+  // 4. سيزر / عصير
+  else if (spokenText.includes("سيزر") || spokenText.includes("عصير")) {
+    responseText = objectionRules.caesar?.price || objectionRules.general?.price;
+  }
+  // 5. اعتراضات السعر العامة (لأي منتج آخر)
+  else if (spokenText.includes("غالي") || spokenText.includes("سعر") || spokenText.includes("مرتفع")) {
+    responseText = objectionRules.general?.price;
+  }
+
+  // في حال عدم وجود أي كلمة مفتاحية
+  if (!responseText) {
+    responseText = objectionRules.general?.price || "السرعة في الدوران وهامش الربح الإجمالي يعوضان أي فرق بسيط في السعر مقارنة بالمنافسين.";
+  }
+
+  const responseBox = document.getElementById('responseBox');
+  if (responseBox) responseBox.innerText = responseText;
