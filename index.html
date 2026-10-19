@@ -27,6 +27,11 @@
             <div id="statusText" class="mt-2 text-secondary font-monospace">انقر للبدء بالاستماع</div>
         </div>
 
+        <!-- زر تجربة سريع للتحقق -->
+        <div class="mb-3">
+            <button id="testBtn" class="btn btn-sm btn-outline-secondary">اختبار يدوي بدون ميكروفون ("سعر بايسن غالي")</button>
+        </div>
+
         <!-- عرض النص المسموع -->
         <div class="mb-3 text-start">
             <label class="form-label fw-bold">النص المسموع:</label>
@@ -42,102 +47,85 @@
 </div>
 
 <script>
-// 1. القواعد المدمجة المباشرة لضمان العمل التام بدون مشاكل التحميل
-let defaultRules = {
-  "bison": "بايسن هو مشروب الطاقة الأكثر طلباً؛ السرعة في الدوران وهامش الربح الإجمالي يعوضان أي فرق بسيط في السعر مقارنة بالمنافسين.",
-  "baker": "منتجات بيكر توفر جودة تغليف وتصنيع عالية تعزز ثقة المستهلك، مما يرفع متوسط قيمة السلة الشرائية.",
-  "horse_head": "شاي رأس الحصان يمتلك قاعدة زبائن وفية تبحث عن الطعم الأصلي، مما يعني مبيعات مضمونة ودوران سريع للمخزون.",
-  "general_price": "السرعة في الدوران وهامش الربح الإجمالي يعوضان أي فرق بسيط في السعر مقارنة بالمنافسين.",
-  "general_quality": "المنتج مصنع وفق أعلى معايير الجودة والتغليف لضمان جودة العرض وطول فترة الصلاحية."
+// القواعد المدمجة المباشرة
+const defaultRules = {
+  bison: "بايسن هو مشروب الطاقة الأكثر طلباً؛ السرعة في الدوران وهامش الربح الإجمالي يعوضان أي فرق بسيط في السعر مقارنة بالمنافسين.",
+  baker: "منتجات بيكر توفر جودة تغليف وتصنيع عالية تعزز ثقة المستهلك، مما يرفع متوسط قيمة السلة الشرائية.",
+  horse: "شاي رأس الحصان يمتلك قاعدة زبائن وفية تبحث عن الطعم الأصلي، مما يعني مبيعات مضمونة ودوران سريع للمخزون.",
+  general: "السرعة في الدوران وهامش الربح الإجمالي يعوضان أي فرق بسيط في السعر مقارنة بالمنافسين."
 };
 
-let objectionRules = defaultRules;
+document.addEventListener('DOMContentLoaded', () => {
+    const recordBtn = document.getElementById('recordBtn');
+    const testBtn = document.getElementById('testBtn');
+    const statusText = document.getElementById('statusText');
+    const transcriptBox = document.getElementById('transcriptBox');
+    const responseBox = document.getElementById('responseBox');
 
-// 2. محاولة جلب الملف الخارجي كخيار إضافي
-fetch('./objection_rules.json')
-  .then(response => response.json())
-  .then(data => {
-    if(data && Object.keys(data).length > 0) {
-      objectionRules = data;
-    }
-  })
-  .catch(err => console.log("جاري استخدام القواعد المدمجة المباشرة..."));
-
-// 3. إعداد التعرف على الصوت
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const recordBtn = document.getElementById('recordBtn');
-const statusText = document.getElementById('statusText');
-const transcriptBox = document.getElementById('transcriptBox');
-const responseBox = document.getElementById('responseBox');
-
-if (!SpeechRecognition) {
-    statusText.innerText = "المتصفح لا يدعم الميكروفون. يرجى استخدام Chrome أو Safari.";
-} else {
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'ar-SA';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recordBtn.addEventListener('click', () => {
-        try {
-            recognition.start();
-            recordBtn.classList.add('recording');
-            statusText.innerText = "جاري الاستماع للعميل...";
-        } catch (e) {
-            recognition.stop();
-            recordBtn.classList.remove('recording');
-            statusText.innerText = "انقر للبدء بالاستماع";
-        }
+    // 1. زر الاختبار اليدوي الفوري
+    testBtn.addEventListener('click', () => {
+        const sampleText = "سعر بايسن غالي";
+        transcriptBox.innerText = sampleText;
+        processObjection(sampleText);
     });
 
-    recognition.onresult = (event) => {
-        recordBtn.classList.remove('recording');
-        statusText.innerText = "تم التقاط الصوت بنجاح";
-        const spokenText = event.results[0][0].transcript;
-        transcriptBox.innerText = spokenText;
-        matchObjection(spokenText.toLowerCase());
-    };
+    // 2. إعداد الميكروفون
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    recognition.onerror = (event) => {
-        recordBtn.classList.remove('recording');
-        statusText.innerText = "حدث خطأ: " + event.error;
-    };
+    if (!SpeechRecognition) {
+        statusText.innerText = "المتصفح لا يدعم التعرف الصوتي. يرجى استخدام Chrome.";
+    } else {
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'ar-SA';
+        recognition.continuous = false;
+        recognition.interimResults = false;
 
-    recognition.onend = () => {
-        recordBtn.classList.remove('recording');
-    };
-}
+        recordBtn.addEventListener('click', () => {
+            try {
+                recognition.start();
+                recordBtn.classList.add('recording');
+                statusText.innerText = "جاري الاستماع للعميل...";
+            } catch (e) {
+                recognition.stop();
+                recordBtn.classList.remove('recording');
+                statusText.innerText = "انقر للبدء بالاستماع";
+            }
+        });
 
-// 4. دالة مطابقة متطورة وشاملة تضمن الرد دائماً
-function matchObjection(spokenText) {
-  let responseText = "";
+        recognition.onresult = (event) => {
+            recordBtn.classList.remove('recording');
+            statusText.innerText = "تم التقاط الصوت بنجاح";
+            const spokenText = event.results[0][0].transcript;
+            transcriptBox.innerText = spokenText;
+            processObjection(spokenText);
+        };
 
-  // مطابقة بايسن
-  if (spokenText.includes("بايسن") || spokenText.includes("bison")) {
-    responseText = objectionRules.bison?.price || objectionRules.bison || defaultRules.bison;
-  } 
-  // مطابقة بيكر
-  else if (spokenText.includes("بيكر") || spokenText.includes("baker")) {
-    responseText = objectionRules.baker?.quality || objectionRules.baker?.price || objectionRules.baker || defaultRules.baker;
-  }
-  // مطابقة شاي رأس الحصان
-  else if (spokenText.includes("حصان") || spokenText.includes("شاي") || spokenText.includes("راس")) {
-    responseText = objectionRules.horse_head_tea?.quality || objectionRules.horse_head_tea?.price || objectionRules.horse_head || defaultRules.horse_head;
-  }
-  // مطابقة أسباب عامة (سعر / غالي / تكلفة / عصير / أي منتج آخر)
-  else if (spokenText.includes("سعر") || spokenText.includes("غالي") || spokenText.includes("غالية") || spokenText.includes("تكلفة")) {
-    responseText = objectionRules.general?.price || defaultRules.general_price;
-  }
-  else if (spokenText.includes("جودة") || spokenText.includes("تغليف") || spokenText.includes("نوعية")) {
-    responseText = objectionRules.general?.quality || defaultRules.general_quality;
-  }
-  // الرد الاحتياطي الشامل في حال عدم المطابقة
-  else {
-    responseText = "السرعة في الدوران وهامش الربح الإجمالي يعوضان أي فرق بسيط؛ منتجاتنا تضمن لك أعلى نسبة إقبال ودوران سريع.";
-  }
+        recognition.onerror = (event) => {
+            recordBtn.classList.remove('recording');
+            statusText.innerText = "خطأ في الميكروفون: " + event.error;
+        };
 
-  responseBox.innerText = responseText;
-}
+        recognition.onend = () => {
+            recordBtn.classList.remove('recording');
+        };
+    }
+
+    // 3. دالة معالجة الرد المباشرة
+    function processObjection(text) {
+        const lower = text.toLowerCase();
+        let reply = defaultRules.general;
+
+        if (lower.includes("بايسن") || lower.includes("bison")) {
+            reply = defaultRules.bison;
+        } else if (lower.includes("بيكر") || lower.includes("baker")) {
+            reply = defaultRules.baker;
+        } else if (lower.includes("حصان") || lower.includes("شاي")) {
+            reply = defaultRules.horse;
+        }
+
+        responseBox.innerText = reply;
+    }
+});
 </script>
 </body>
 </html>
