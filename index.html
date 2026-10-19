@@ -19,7 +19,7 @@
 <div class="container my-4" style="max-width: 600px;">
     <div class="card p-4 text-center">
         <h3 class="mb-3 text-primary fw-bold">مساعد ليدرز الذكي للمبيعات</h3>
-        <p class="text-muted">اختر المنتج أو انقر على زر التسجيل وانطق الاعتراض الميداني مباشرة</p>
+        <p class="text-muted">انقر على زر التسجيل وانطق الاعتراض الميداني مباشرة</p>
 
         <!-- زر الميكروفون والتسجيل -->
         <div class="my-4">
@@ -57,66 +57,4 @@ fetch('./objection_rules.json')
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recordBtn = document.getElementById('recordBtn');
 const statusText = document.getElementById('statusText');
-const transcriptBox = document.getElementById('transcriptBox');
-const responseBox = document.getElementById('responseBox');
-
-if (!SpeechRecognition) {
-    statusText.innerText = "المتصفح لا يدعم الميكروفون. يرجى استخدام Chrome أو Safari.";
-} else {
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'ar-SA';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recordBtn.addEventListener('click', () => {
-        try {
-            recognition.start();
-            recordBtn.classList.add('recording');
-            statusText.innerText = "جاري الاستماع للعميل...";
-        } catch (e) {
-            recognition.stop();
-            recordBtn.classList.remove('recording');
-            statusText.innerText = "انقر للبدء بالاستماع";
-        }
-    });
-
-    recognition.onresult = (event) => {
-        recordBtn.classList.remove('recording');
-        statusText.innerText = "تم التقاط الصوت بنجاح";
-        const spokenText = event.results[0][0].transcript;
-        transcriptBox.innerText = spokenText;
-        matchObjection(spokenText.toLowerCase());
-    };
-
-    recognition.onerror = (event) => {
-        recordBtn.classList.remove('recording');
-        statusText.innerText = "حدث خطأ: " + event.error;
-    };
-
-    recognition.onend = () => {
-        recordBtn.classList.remove('recording');
-    };
-}
-
-// 3. مطابقة الاعتراض وإظهار الرد الميداني
-function matchObjection(spokenText) {
-  let responseText = "لم يتم العثور على رد مخصص لهذا الاعتراض.";
-
-  if (spokenText.includes("بايسن") || spokenText.includes("bison")) {
-    if (spokenText.includes("سعر") || spokenText.includes("غالي")) responseText = objectionRules.bison?.price;
-    else if (spokenText.includes("مخزون") || spokenText.includes("نقص")) responseText = objectionRules.bison?.stock;
-    else responseText = objectionRules.bison?.price || responseText;
-  } 
-  else if (spokenText.includes("بيكر") || spokenText.includes("baker")) {
-    if (spokenText.includes("جودة") || spokenText.includes("تغليف")) responseText = objectionRules.baker?.quality;
-    else responseText = objectionRules.baker?.price || responseText;
-  }
-  else if (spokenText.includes("حصان") || spokenText.includes("شاي")) {
-    responseText = objectionRules.horse_head_tea?.quality || objectionRules.horse_head_tea?.price;
-  }
-
-  responseBox.innerText = responseText || "الرد غير متوفر في قواعد الاعتراضات.";
-}
-</script>
-</body>
-</html>
+const transcriptBox
