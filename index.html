@@ -11,7 +11,7 @@
         .btn-record { width: 100px; height: 100px; border-radius: 50%; font-size: 32px; transition: all 0.3s; }
         .btn-record.recording { background-color: #dc3545 !important; border-color: #dc3545; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
-        .response-box { background: #eef2f5; border-right: 5px solid #0d6efd; border-radius: 8px; min-height: 100px; font-size: 1.1rem; }
+        .response-box { background: #eef2f5; border-right: 5px solid #0d6efd; border-radius: 8px; min-height: 100px; font-size: 1.15rem; line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -25,11 +25,6 @@
         <div class="my-4">
             <button id="recordBtn" class="btn btn-primary btn-record shadow">🎙️</button>
             <div id="statusText" class="mt-2 text-secondary font-monospace">انقر للبدء بالاستماع</div>
-        </div>
-
-        <!-- زر تجربة سريع للتحقق -->
-        <div class="mb-3">
-            <button id="testBtn" class="btn btn-sm btn-outline-secondary">اختبار يدوي بدون ميكروفون ("سعر بايسن غالي")</button>
         </div>
 
         <!-- عرض النص المسموع -->
@@ -47,33 +42,17 @@
 </div>
 
 <script>
-// القواعد المدمجة المباشرة
-const defaultRules = {
-  bison: "بايسن هو مشروب الطاقة الأكثر طلباً؛ السرعة في الدوران وهامش الربح الإجمالي يعوضان أي فرق بسيط في السعر مقارنة بالمنافسين.",
-  baker: "منتجات بيكر توفر جودة تغليف وتصنيع عالية تعزز ثقة المستهلك، مما يرفع متوسط قيمة السلة الشرائية.",
-  horse: "شاي رأس الحصان يمتلك قاعدة زبائن وفية تبحث عن الطعم الأصلي، مما يعني مبيعات مضمونة ودوران سريع للمخزون.",
-  general: "السرعة في الدوران وهامش الربح الإجمالي يعوضان أي فرق بسيط في السعر مقارنة بالمنافسين."
-};
-
 document.addEventListener('DOMContentLoaded', () => {
     const recordBtn = document.getElementById('recordBtn');
-    const testBtn = document.getElementById('testBtn');
     const statusText = document.getElementById('statusText');
     const transcriptBox = document.getElementById('transcriptBox');
     const responseBox = document.getElementById('responseBox');
 
-    // 1. زر الاختبار اليدوي الفوري
-    testBtn.addEventListener('click', () => {
-        const sampleText = "سعر بايسن غالي";
-        transcriptBox.innerText = sampleText;
-        processObjection(sampleText);
-    });
-
-    // 2. إعداد الميكروفون
+    // 1. إعداد التعرف على الصوت
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-        statusText.innerText = "المتصفح لا يدعم التعرف الصوتي. يرجى استخدام Chrome.";
+        statusText.innerText = "المتصفح لا يدعم الميكروفون. يرجى استخدام Chrome أو Safari.";
     } else {
         const recognition = new SpeechRecognition();
         recognition.lang = 'ar-SA';
@@ -97,12 +76,12 @@ document.addEventListener('DOMContentLoaded', () => {
             statusText.innerText = "تم التقاط الصوت بنجاح";
             const spokenText = event.results[0][0].transcript;
             transcriptBox.innerText = spokenText;
-            processObjection(spokenText);
+            matchObjection(spokenText);
         };
 
         recognition.onerror = (event) => {
             recordBtn.classList.remove('recording');
-            statusText.innerText = "خطأ في الميكروفون: " + event.error;
+            statusText.innerText = "حدث خطأ: " + event.error;
         };
 
         recognition.onend = () => {
@@ -110,17 +89,38 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // 3. دالة معالجة الرد المباشرة
-    function processObjection(text) {
+    // 2. دالة مطابقة الاعتراضات الميدانية الاحترافية
+    function matchObjection(text) {
         const lower = text.toLowerCase();
-        let reply = defaultRules.general;
+        let reply = "";
 
-        if (lower.includes("بايسن") || lower.includes("bison")) {
-            reply = defaultRules.bison;
-        } else if (lower.includes("بيكر") || lower.includes("baker")) {
-            reply = defaultRules.baker;
-        } else if (lower.includes("حصان") || lower.includes("شاي")) {
-            reply = defaultRules.horse;
+        // اعتراض جودة المنتج / نسبة اللحم (مثل مرتديلا المراعي وغيرها)
+        if (lower.includes("جودة") || lower.includes("لحم") || lower.includes("نسبة") || lower.includes("مرتديلا")) {
+            reply = "السعر أعلى بسبب جودة المنتج... نسبة اللحم فيه 80%، والمنتج عليه طلب أعلى، بس علينا نعرضه بطريقة صحيحة.";
+        }
+        // اعتراض عدم وجود مساحة
+        else if (lower.includes("مساحة") || lower.includes("مكان") || lower.includes("رف") || lower.includes("رتبلك")) {
+            reply = "تركني رتبلك الرف وظبطه، أول ببين إذا معنا مساحة أو لا. خلينا نستبدل الصنف البطيء ونجرّب لأن حركته سريعة.";
+        }
+        // اعتراض عدم وجود طلب / ضعيف الحركة
+        else if (lower.includes("طلب") || lower.includes("ما عليه") || lower.includes("ما بيمشي")) {
+            reply = "خلينا نجرب عرض بسيط ونشوف الحركة بمكان مميز ونقيس النتيجة.";
+        }
+        // اعتراض توفر منافس أو نفس المنتج
+        else if (lower.includes("نفس المنتج") || lower.includes("عندي منافس") || lower.includes("موجود عندي")) {
+            reply = "ممتاز، هذا يدل في طلب... خلينا نضيف خيار مختلف لنستهدف شريحة ثانية ونزيد البيع.";
+        }
+        // اعتراض وجود بضاعة كافية
+        else if (lower.includes("كافية") || lower.includes("عندي بضاعة") || lower.includes("مليان")) {
+            reply = "تمام، خلينا نأمن الطلب قبل ما ينقطع خصوصاً مع الحركة الحالية.";
+        }
+        // اعتراض السعر غالي (الرد الاحترافي العام والافتراضي)
+        else if (lower.includes("سعر") || lower.includes("غالي") || lower.includes("مرتفع") || lower.includes("مناسب")) {
+            reply = "أنا بتفهم اهتمامك بالسعر. صحيح أعلى شوي، بس بيمشي أسرع وبيعتيك ربح أعلى (يعني كاش أسرع وربح أعلى).";
+        }
+        // الرد الافتراضي
+        else {
+            reply = "صحيح أعلى شوي، بس بيمشي أسرع وبيعتيك ربح أعلى.";
         }
 
         responseBox.innerText = reply;
